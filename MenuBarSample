@@ -1,0 +1,115 @@
+
+
+// Renders one themed note editor page for a selected menu bar tab.
+struct NoteEditorPage: View {
+    // Provides the tab title, color, font, and accessibility metadata.
+    let tab: MoonNoteTab
+    // Keeps the text and selection owned by the parent tab container.
+    @Binding var state: MoonNoteEditorState
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            header
+
+            TextEditor(text: $state.text, selection: $state.selection)
+                .font(tab.editorFont)
+                .autocorrectionDisabled(false)
+                .scrollContentBackground(.hidden)
+                .padding(10)
+                .background(alignment: .bottomTrailing) {
+                    editorBackground
+                }
+                .overlay {
+                    editorBorder
+                }
+        }
+        .padding(12)
+        .background(alignment: .center) {
+            pageBackground
+        }
+        .overlay {
+            pageBorder
+        }
+        #if os(macOS)
+        .containerBackground(Material.ultraThinMaterial.materialActiveAppearance(.active), for: .window)
+        #endif
+    }
+
+    // Shows the tab title and live character count above the editor.
+    private var header: some View {
+        HStack {
+            Text(tab.title)
+                .font(.caption.weight(.bold))
+                .foregroundStyle(tab.tint)
+                .padding(.horizontal, 4)
+
+            Spacer()
+
+            Text(characterCountLabel)
+                .font(.caption)
+                .foregroundStyle(tab.tint.gradient)
+                .monospacedDigit()
+        }
+    }
+
+    // Formats the count label with singular/plural wording.
+    private var characterCountLabel: String {
+        let characterCount = state.text.characters.count
+        let unit = characterCount == 1 ? "Character" : "Characters"
+        return "\(characterCount) \(unit)"
+    }
+
+    // Tints the editable text surface with the active tab color.
+    private var editorBackground: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .fill(tab.tint.gradient)
+            .opacity(0.18)
+    }
+
+    // Outlines the editable text surface with a stronger tab color.
+    private var editorBorder: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(tab.tint.opacity(0.45), lineWidth: 1)
+    }
+
+    // Layers the page backdrop behind the editor contents.
+    private var pageBackground: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.05, green: 0.06, blue: 0.08),
+                            tab.tint.opacity(0.22)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+
+            GradientView(style: LinearGradient(
+                colors: [
+                    Color(red: 0.1, green: 0.15, blue: 0.25),
+                    Color(red: 0.08, green: 0.1, blue: 0.2),
+                    Color(red: 0.12, green: 0.12, blue: 0.22)
+                ],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            ))
+        }
+    }
+
+    // Adds a subtle outer border to separate the page from the menu bar chrome.
+    private var pageBorder: some View {
+        RoundedRectangle(cornerRadius: 16, style: .continuous)
+            .stroke(tab.tint.gradient.opacity(0.3), lineWidth: 1)
+    }
+}
+
+// Holds the editable attributed text and current text selection for a tab.
+struct MoonNoteEditorState {
+    // Stores the rich text shown by TextEditor.
+    var text = AttributedString("")
+    // Tracks the selected range inside the attributed text editor.
+    var selection = AttributedTextSelection()
+}
